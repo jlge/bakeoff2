@@ -74,6 +74,7 @@ void draw() {
     mouseHovered = false;
   }
 
+  drawSizeSlider();
   //shouldn't really modify this printout code unless there is a really good reason to
   if (userDone)
   {
@@ -124,49 +125,62 @@ void draw() {
   fill(255);
   scaffoldControlLogic(); //you are going to want to replace this!
   text("Trial " + (trialIndex+1) + " of " +trialCount, width/2, inchToPix(.8f));
+  text("Size", width/15, 3*height/10, inchToPix(.4f));
+  text("Rotate", 3*width/4, height/8 - 5, inchToPix(.4f));
+}
+
+void drawSizeSlider() {
+  float sizesliderX = inchToPix(0.8f); // Adjust X position of the slider
+  float sizesliderY = height / 3; // Adjust Y position of the slider
+  float sizesliderwidth = inchToPix(0.2); // Slider width
+  float sizesliderheight = inchToPix(3.5); // Slider height
+  float sliderPosition = sizesliderY + map(logoZ, inchToPix(0.25f), inchToPix(3.0f), 0, sizesliderheight);
+
+  // Check if mouse is pressing on the slider
+  if (mousePressed && mouseX >= sizesliderX && mouseX <= sizesliderX + sizesliderwidth && mouseY >= sizesliderY && mouseY <= sizesliderY + sizesliderheight) {
+    // Calculate slider value based on mouse position
+    float newValue = map(constrain(mouseY, sizesliderY, sizesliderY + sizesliderheight), sizesliderY, sizesliderY + sizesliderheight, inchToPix(0.25f), inchToPix(3.0f));
+    logoZ = newValue;
+  }
+
+  // Draw slider background
+  fill(100);
+  rect(sizesliderX + sizesliderwidth / 2, sizesliderY + sizesliderheight / 2, sizesliderwidth, sizesliderheight);
+
+  // Draw slider handle
+  fill(255);
+  rect(sizesliderX + sizesliderwidth / 2, sliderPosition, sizesliderwidth, inchToPix(0.2f));
 }
 
 //my example design for control, which is terrible
 void scaffoldControlLogic()
 {
-  //upper left corner, rotate counterclockwise
-  text("CCW", inchToPix(.4f), inchToPix(.4f));
-  if (mousePressed && dist(0, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoRotation--;
+  float sliderX = width / 2;
+  float sliderY = inchToPix(1.2f);
+  float sliderWidth = inchToPix(4);
+  float sliderHeight = inchToPix(0.3f);
+  float sliderPosition = sliderX + map(logoRotation, 0, 360, 0, sliderWidth) + 10;
+
+  // Check if mouse is pressing on the slider
+  if (mousePressed && mouseX >= sliderX - 2*sliderWidth/3 - 10 && mouseX <= sliderX + 2*sliderWidth/3 - 10 && mouseY >= sliderY && mouseY <= sliderY + sliderHeight) {
+    // Calculate slider value based on mouse position
+    float newValue = map(constrain(mouseX, sliderX - 2*sliderWidth/3 - 10, sliderX + 2*sliderWidth/3 - 10), sliderX, sliderX + sliderWidth, 0, 360);
+    logoRotation = newValue;
+  }
+
+  // Draw slider background
+  fill(100);
+  rect(sliderX, sliderY, sliderWidth + 100, sliderHeight);
+
+  // Draw slider handle
+  fill(255);
+  rect(sliderPosition, sliderY, inchToPix(0.2f), sliderHeight);
   
-  //text("Rotate", 10+inchToPix(.4f), 4*inchToPix(.4f));
-  
-  //upper right corner, rotate clockwise
-  text("CW", width-inchToPix(.4f), inchToPix(.4f));
-  if (mousePressed && dist(width, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoRotation++;
+  float sizesliderX = inchToPix(1.2f);
+  float sizesliderY = height/3;
+  float sizesliderwidth = inchToPix(0.2);
+  float sizesliderheight = inchToPix(3.5);
 
-  //lower left corner, decrease Z
-  text("-", inchToPix(.4f), height-inchToPix(.4f));
-  if (mousePressed && dist(0, height, mouseX, mouseY)<inchToPix(.8f))
-    logoZ = constrain(logoZ-inchToPix(.02f), .01, inchToPix(4f)); //leave min and max alone!
-
-  //lower right corner, increase Z
-  text("+", width-inchToPix(.4f), height-inchToPix(.4f));
-  if (mousePressed && dist(width, height, mouseX, mouseY)<inchToPix(.8f))
-    logoZ = constrain(logoZ+inchToPix(.02f), .01, inchToPix(4f)); //leave min and max alone! 
-
-  //left middle, move left
-  text("left", inchToPix(.4f), height/2);
-  if (mousePressed && dist(0, height/2, mouseX, mouseY)<inchToPix(.8f))
-    logoX-=inchToPix(.02f);
-
-  text("right", width-inchToPix(.4f), height/2);
-  if (mousePressed && dist(width, height/2, mouseX, mouseY)<inchToPix(.8f))
-    logoX+=inchToPix(.02f);
-
-  text("up", width/2, inchToPix(.4f));
-  if (mousePressed && dist(width/2, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoY-=inchToPix(.02f);
-
-  text("down", width/2, height-inchToPix(.4f));
-  if (mousePressed && dist(width/2, height, mouseX, mouseY)<inchToPix(.8f))
-    logoY+=inchToPix(.02f);
 }
 
 void mousePressed()
@@ -197,7 +211,7 @@ void mouseReleased()
 {
   locked = false;
   //check to see if user clicked middle of screen within 3 inches, which this code uses as a submit button
-  if (dist(width/2, height/2, mouseX, mouseY)<inchToPix(3f))
+  if (dist(width/2, height/2, mouseX, mouseY)<inchToPix(3f) && !mouseHovered)
   {
     if (userDone==false && !checkForSuccess())
       errorCount++;
