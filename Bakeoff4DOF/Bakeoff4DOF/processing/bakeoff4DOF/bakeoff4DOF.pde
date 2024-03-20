@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Collections;
+import java.lang.Math;
 
 //these are variables you should probably leave alone
 int index = 0; //starts at zero-ith trial
@@ -11,6 +12,17 @@ float errorPenalty = 0.5f; //for every error, add this value to mean time
 int startTime = 0; // time starts when the first click is captured
 int finishTime = 0; //records the time of the final click
 boolean userDone = false; //is the user done
+boolean mouseHovered = false; // whether the user is hovering over the square
+boolean locked = false;
+float xoff = 0.0;
+float yoff = 0.0;
+float arrowLength = 300; // Length of the arrowhead
+float arrowWidth = 20; // Width of the arrowhead
+boolean sizeHovered = false;
+boolean sizeLocked = false;
+boolean rotateHovered = false;
+boolean rotateLocked = false;
+float circleStrokeWeight = 25;
 
 final int screenPPI = 72; //what is the DPI of the screen you are using
 //you can test this by drawing a 72x72 pixel rectangle in code, and then confirming with a ruler it is 1x1 inch. 
@@ -59,11 +71,27 @@ void setup() {
 
 
 void draw() {
-
   background(40); //background is dark grey
   fill(200);
   noStroke();
+  
+  if (mouseX > logoX - logoZ / 2 && mouseX < logoX + logoZ / 2 && mouseY > logoY - logoZ / 2 && mouseY < logoY + logoZ / 2) {
+    mouseHovered = true;
+  } else {
+    mouseHovered = false;
+  }
+  
+  if (inCircle()) {
+    sizeHovered = true;
+  } else {
+    sizeHovered = false;
+  }
 
+  if (inLine()) {
+    rotateHovered = true;
+  } else {
+    rotateHovered = false;
+  }
   //shouldn't really modify this printout code unless there is a really good reason to
   if (userDone)
   {
@@ -97,7 +125,24 @@ void draw() {
   rotate(radians(logoRotation)); //rotate using the logo square as the origin
   noStroke();
   fill(60, 60, 192, 192);
+  
+  if (mouseHovered) {
+    //fill(100, 100, 255); // Change fill color when hovered
+    stroke(255); // Change outline color when hovered
+  } else {
+    fill(60, 60, 192, 192);
+    stroke(0);
+  }
+  
+  Destination d = destinations.get(trialIndex);  
+  boolean closeDist = dist(d.x, d.y, logoX, logoY)<inchToPix(.05f);
+  if (closeDist) {
+    stroke(0, 255, 0);
+  }
+  rectMode(CENTER);
   rect(0, 0, logoZ, logoZ);
+  drawLines(0, 0, logoZ, logoZ);
+  drawCircle();
   popMatrix();
 
   //===========DRAW EXAMPLE CONTROLS=================
@@ -109,42 +154,50 @@ void draw() {
 //my example design for control, which is terrible
 void scaffoldControlLogic()
 {
-  //upper left corner, rotate counterclockwise
-  text("CCW", inchToPix(.4f), inchToPix(.4f));
-  if (mousePressed && dist(0, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoRotation--;
 
-  //upper right corner, rotate clockwise
-  text("CW", width-inchToPix(.4f), inchToPix(.4f));
-  if (mousePressed && dist(width, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoRotation++;
+}
 
-  //lower left corner, decrease Z
-  text("-", inchToPix(.4f), height-inchToPix(.4f));
-  if (mousePressed && dist(0, height, mouseX, mouseY)<inchToPix(.8f))
-    logoZ = constrain(logoZ-inchToPix(.02f), .01, inchToPix(4f)); //leave min and max alone!
+boolean inCircle() {
+    // Calculate distance from mouse to circle center
+  float distanceToCenter = dist(mouseX, mouseY, logoX, logoY);
+  // Calculate the radius of the circle considering the stroke weight
+  //float circleRadius = logoZ / 2 + circleStrokeWeight / 2;
+  float radius = (float)Math.sqrt(logoZ * logoZ * 2)/2+12.5;
+  
+  // Check if the distance is within the circle's border
+  if ((distanceToCenter >= (radius - circleStrokeWeight/2)) && (distanceToCenter <= (radius + circleStrokeWeight/2))) {
+    return true;
+  }
+  return false;
+}
 
-  //lower right corner, increase Z
-  text("+", width-inchToPix(.4f), height-inchToPix(.4f));
-  if (mousePressed && dist(width, height, mouseX, mouseY)<inchToPix(.8f))
-    logoZ = constrain(logoZ+inchToPix(.02f), .01, inchToPix(4f)); //leave min and max alone! 
+boolean inLine() {
+  float centerX = logoX;
+  float centerY = logoY;
+  float distanceToCenter = dist(mouseX, mouseY, logoX, logoY);
+  
+  // Calculate the difference between the mouse position and the center of the rectangle
+  float dx = mouseX - centerX;
+  float dy = mouseY - centerY;
+  
+  // Calculate the angle using the arctangent function (atan2)
+  float angle = atan2(dy, dx);
+  
+  // Convert the angle from radians to degrees
+  angle = degrees(angle);
+  
+  // Adjust the angle range from -180 to 180 to 0 to 360
+  if (angle < 0) {
+    angle += 360;
+  }
+  logoRotation = logoRotation % 90;
 
-  //left middle, move left
-  text("left", inchToPix(.4f), height/2);
-  if (mousePressed && dist(0, height/2, mouseX, mouseY)<inchToPix(.8f))
-    logoX-=inchToPix(.02f);
-
-  text("right", width-inchToPix(.4f), height/2);
-  if (mousePressed && dist(width, height/2, mouseX, mouseY)<inchToPix(.8f))
-    logoX+=inchToPix(.02f);
-
-  text("up", width/2, inchToPix(.4f));
-  if (mousePressed && dist(width/2, 0, mouseX, mouseY)<inchToPix(.8f))
-    logoY-=inchToPix(.02f);
-
-  text("down", width/2, height-inchToPix(.4f));
-  if (mousePressed && dist(width/2, height, mouseX, mouseY)<inchToPix(.8f))
-    logoY+=inchToPix(.02f);
+  if ((angle > 45-3+logoRotation && angle < 45+3+logoRotation) || (angle > 135-3+logoRotation && angle < 135+3+logoRotation) || 
+  (angle > 225-3+logoRotation && angle < 225+3+logoRotation) || (angle > 315-3+logoRotation && angle < 315+3+logoRotation)) {
+    return distanceToCenter < 308;
+  } else {
+    return false;
+  }
 }
 
 void mousePressed()
@@ -154,12 +207,81 @@ void mousePressed()
     startTime = millis();
     println("time started!");
   }
+  if (mouseHovered){
+    locked = true;
+    fill(60, 60, 192, 192);
+  } else{
+    locked = false;
+  }
+  
+  if (sizeHovered) {
+    sizeLocked = true;
+  } else {
+    sizeLocked = false;
+  }
+  
+  if (rotateHovered) {
+    rotateLocked = true;
+  } else {
+    rotateLocked = false;
+  }
+  xoff = mouseX-logoX;
+  yoff = mouseY-logoY;
+}
+
+// Drawing arrows pointing radially outwards from the center of the rectangle
+void drawLines(float x, float y, float w, float h) {
+  Destination d = destinations.get(trialIndex);  
+  boolean closeRotation = calculateDifferenceBetweenAngles(d.rotation, logoRotation)<=5;
+  if (closeRotation) {
+    stroke(0,255,0);
+  } else if (rotateHovered || rotateLocked) {
+    stroke(255);
+  } else {
+    stroke(0);
+  }
+  
+  strokeWeight(9);
+  // Calculate the center of the rectangle
+  float centerX = x;
+  float centerY = y;
+
+  // Calculate the angles for each arrow
+  float[] angles = {QUARTER_PI, -QUARTER_PI, -3 * QUARTER_PI, 3 * QUARTER_PI}; // Angles in radians
+
+  // Draw arrows for all four directions
+  for (int i = 0; i < 4; i++) {
+    float endX = centerX + cos(angles[i]) * arrowLength;
+    float endY = centerY + sin(angles[i]) * arrowLength;
+
+    // Draw arrow shaft
+    line(centerX, centerY, endX, endY);
+
+  }
+}
+
+void drawCircle() {
+  noFill();
+  Destination d = destinations.get(trialIndex);  
+  boolean closeZ = abs(d.z - logoZ)<inchToPix(.1f);
+  if (closeZ) {
+    stroke(0,255,0);
+  } else if (inCircle() || sizeLocked) {
+    stroke(255);
+  } else {
+    stroke(0);
+  }
+  
+  strokeWeight(circleStrokeWeight);
+  float hypotenuse = (float)Math.sqrt(logoZ * logoZ * 2);
+  circle(0,0,hypotenuse+25);
 }
 
 void mouseReleased()
 {
   //check to see if user clicked middle of screen within 3 inches, which this code uses as a submit button
-  if (dist(width/2, height/2, mouseX, mouseY)<inchToPix(3f))
+  locked = false;
+  if (dist(width/2, height/2, mouseX, mouseY)<inchToPix(3f) && (!mouseHovered && !sizeLocked && !rotateLocked))
   {
     if (userDone==false && !checkForSuccess())
       errorCount++;
@@ -171,6 +293,33 @@ void mouseReleased()
       userDone = true;
       finishTime = millis();
     }
+  }
+  sizeLocked = false;
+  rotateLocked = false;
+}
+
+void mouseDragged(){
+  if (locked){
+    logoX = mouseX - xoff;
+    logoY = mouseY - yoff;
+  } else if (sizeLocked) {
+    float distanceToCenter =constrain(dist(mouseX, mouseY, logoX, logoY), .01, inchToPix(4f));
+    logoZ = distanceToCenter;
+  } else if (rotateLocked) {
+    float centerX = logoX;
+    float centerY = logoY;
+    float distanceToCenter = dist(mouseX, mouseY, logoX, logoY);
+    
+    // Calculate the difference between the mouse position and the center of the rectangle
+    float dx = mouseX - centerX;
+    float dy = mouseY - centerY;
+    
+    // Calculate the angle using the arctangent function (atan2)
+    float angle = atan2(dy, dx);
+    
+    // Convert the angle from radians to degrees
+    angle = degrees(angle+90);
+    logoRotation = angle;
   }
 }
 
