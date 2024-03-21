@@ -22,7 +22,7 @@ boolean sizeHovered = false;
 boolean sizeLocked = false;
 boolean rotateHovered = false;
 boolean rotateLocked = false;
-float circleStrokeWeight = 25;
+float circleStrokeWeight = 17;
 
 final int screenPPI = 72; //what is the DPI of the screen you are using
 //you can test this by drawing a 72x72 pixel rectangle in code, and then confirming with a ruler it is 1x1 inch. 
